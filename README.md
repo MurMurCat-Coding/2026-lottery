@@ -1,6 +1,6 @@
-# 2026 Lottery
+# 安心生活計劃空投抽獎
 
-Static GitHub Pages lottery page for MurMurCat.
+Static GitHub Pages lottery page for the 安心生活計劃空投抽獎.
 
 ## GitHub Pages
 
