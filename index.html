@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>抽籤工具</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --table-bg: #ffffff;
+      --table-head: #f2f4f7;
+      --stat-bg: #fbfcfe;
+      --button-bg: #eef2f7;
+      --button-text: #344054;
+      --text: #17202a;
+      --muted: #667085;
+      --line: #d9dee7;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --ok-bg: #ecfdf3;
+      --ok-text: #027a48;
+      --warn-bg: #fffaeb;
+      --warn-text: #b54708;
+      --shadow: rgba(16, 24, 40, 0.06);
+      --accent-soft: #dbeafe;
+      --row-flash: #eff6ff;
+      --row-hover: #f8fbff;
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #171b22;
+      --table-bg: #141820;
+      --table-head: #202632;
+      --stat-bg: #141820;
+      --button-bg: #252c38;
+      --button-text: #e4e7ec;
+      --text: #eef2f7;
+      --muted: #a7b0c0;
+      --line: #303847;
+      --accent: #60a5fa;
+      --accent-dark: #3b82f6;
+      --ok-bg: #073b2a;
+      --ok-text: #8ff0c2;
+      --warn-bg: #3b2b08;
+      --warn-text: #ffd88a;
+      --shadow: rgba(0, 0, 0, 0.28);
+      --accent-soft: #1e3a5f;
+      --row-flash: #162235;
+      --row-hover: #1b2432;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    main {
+      width: min(1440px, calc(100vw - 32px));
+      margin: 32px auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .theme-toggle {
+      flex: 0 0 auto;
+      min-width: 112px;
+      margin-top: 2px;
+      background: var(--button-bg);
+      color: var(--button-text);
+      border: 1px solid var(--line);
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .panel {
+      margin-top: 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 12px 30px var(--shadow);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .side-panel {
+      max-height: calc(100vh - 150px);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.35;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .panel-title span {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    input {
+      width: 160px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 16px;
+      background: var(--table-bg);
+      color: var(--text);
+    }
+
+    button {
+      height: 42px;
+      border: 0;
+      border-radius: 6px;
+      padding: 0 16px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+      stroke-width: 2.25;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .primary:hover {
+      background: var(--accent-dark);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    .secondary {
+      background: var(--button-bg);
+      color: var(--button-text);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--stat-bg);
+    }
+
+    .stat-label {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 22px;
+    }
+
+    .notice {
+      display: none;
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      font-weight: 650;
+    }
+
+    .notice.show {
+      display: block;
+    }
+
+    .test-report {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--stat-bg);
+      padding: 14px;
+      line-height: 1.55;
+    }
+
+    .test-report.show {
+      display: block;
+    }
+
+    .test-report h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .test-report ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    .test-pass {
+      color: var(--ok-text);
+      font-weight: 800;
+    }
+
+    .test-fail {
+      color: var(--warn-text);
+      font-weight: 800;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .test-metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: var(--table-bg);
+    }
+
+    .test-metric strong {
+      display: block;
+      margin-top: 2px;
+    }
+
+    .draw-stage {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--stat-bg), var(--table-bg));
+      padding: 16px;
+    }
+
+    .stage-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .ticker {
+      margin-top: 12px;
+      min-height: 74px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--table-bg);
+      display: grid;
+      align-items: center;
+      padding: 14px 16px;
+      overflow: hidden;
+    }
+
+    .ticker.is-running {
+      animation: tickerPulse 0.8s ease-in-out infinite alternate;
+    }
+
+    .ticker strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .ticker span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .progress-track {
+      height: 8px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: var(--button-bg);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      transition: width 0.18s ease;
+    }
+
+    .result-wrap {
+      max-height: 480px;
+      overflow: auto;
+    }
+
+    .result-row {
+      animation: revealRow 0.22s ease both;
+    }
+
+    .guaranteed-row {
+      background: var(--row-flash);
+    }
+
+    .table-wrap {
+      margin-top: 18px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--table-bg);
+    }
+
+    .roster-wrap {
+      margin-top: 0;
+      overflow: auto;
+      min-height: 320px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    .roster-table {
+      min-width: 0;
+    }
+
+    .roster-table th,
+    .roster-table td {
+      font-size: 13px;
+      padding: 9px 10px;
+    }
+
+    .roster-name {
+      min-width: 150px;
+    }
+
+    .roster-name strong {
+      display: block;
+      font-weight: 750;
+    }
+
+    .roster-name span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .identity-cell {
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .identity-pill {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+      border: 1px solid transparent;
+      word-break: keep-all;
+      white-space: normal;
+    }
+
+    .pill-murmur {
+      background: #e0f2fe;
+      color: #075985;
+      border-color: #bae6fd;
+    }
+
+    .pill-three {
+      background: #ede9fe;
+      color: #5b21b6;
+      border-color: #ddd6fe;
+    }
+
+    .pill-double {
+      background: #fce7f3;
+      color: #9d174d;
+      border-color: #fbcfe8;
+    }
+
+    .pill-nine {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    .pill-coding {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .pill-team {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .pill-other {
+      background: var(--button-bg);
+      color: var(--button-text);
+      border-color: var(--line);
+    }
+
+    body.dark .pill-murmur {
+      background: #082f49;
+      color: #bae6fd;
+      border-color: #0c4a6e;
+    }
+
+    body.dark .pill-three {
+      background: #312e81;
+      color: #ddd6fe;
+      border-color: #4338ca;
+    }
+
+    body.dark .pill-double {
+      background: #831843;
+      color: #fbcfe8;
+      border-color: #9d174d;
+    }
+
+    body.dark .pill-nine {
+      background: #78350f;
+      color: #fde68a;
+      border-color: #92400e;
+    }
+
+    body.dark .pill-coding {
+      background: #14532d;
+      color: #bbf7d0;
+      border-color: #166534;
+    }
+
+    body.dark .pill-team {
+      background: #7f1d1d;
+      color: #fecaca;
+      border-color: #991b1b;
+    }
+
+    .weight-cell {
+      width: 72px;
+      text-align: center;
+      font-weight: 750;
+    }
+
+    .weight-stack {
+      display: grid;
+      gap: 5px;
+      min-width: 70px;
+    }
+
+    .weight-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: var(--button-bg);
+      overflow: hidden;
+    }
+
+    .weight-fill {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--table-head);
+      color: var(--button-text);
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr {
+      transition: background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--row-hover);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    @keyframes tickerPulse {
+      from {
+        border-color: var(--line);
+        box-shadow: inset 0 0 0 0 rgba(96, 165, 250, 0);
+      }
+
+      to {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.2);
+      }
+    }
+
+    @keyframes revealRow {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    .empty {
+      padding: 28px 16px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        max-height: 640px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        display: block;
+      }
+
+      .theme-toggle {
+        margin-top: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <div>
+        <h1>抽籤工具</h1>
+        <p>依票數加權抽籤，一個 username 只會中一次；票數為「保證名額」的人會先列入中獎名單。</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">深色模式</button>
+    </div>
+
+    <div class="layout">
+      <section class="panel" aria-label="抽籤控制">
+        <div class="controls">
+          <label>
+            要抽出幾名
+            <input id="drawCount" type="number" min="1" step="1" value="10">
+          </label>
+          <button class="primary" id="drawButton" type="button">開始抽籤</button>
+          <button class="secondary" id="copyButton" type="button">複製結果 CSV</button>
+          <button class="secondary" id="testButton" type="button">測試抽籤邏輯</button>
+          <button class="secondary" id="resetButton" type="button">清空結果</button>
+        </div>
+
+        <div class="summary" id="summary"></div>
+        <div class="draw-stage" id="drawStage" aria-live="polite">
+          <div class="stage-top">
+            <span id="stageLabel">準備抽籤</span>
+            <span id="stageCount">0 / 0</span>
+          </div>
+          <div class="ticker" id="tickerBox">
+            <div>
+              <strong id="tickerName">等待開始</strong>
+              <span id="tickerMeta">輸入名額後按開始抽籤</span>
+            </div>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+        </div>
+        <div class="notice" id="notice"></div>
+        <div class="test-report" id="testReport" aria-live="polite"></div>
+
+        <div class="table-wrap result-wrap" id="resultWrap">
+          <div class="empty">尚未抽籤</div>
+        </div>
+      </section>
+
+      <aside class="panel side-panel" aria-label="抽獎名單">
+        <div class="panel-title">
+          <h2><span aria-hidden="true" id="rosterIcon"></span>抽獎名單</h2>
+          <span id="rosterCount"></span>
+        </div>
+        <div class="table-wrap roster-wrap" id="rosterWrap"></div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const rawData = `username	global_name	role	額外身份	票數
+ponchimeow	碰器	呢喃貓		1
+gd888	cht	三隻小貓		3
+doo2q	D²	呢喃貓		1
+.hsin	Hsin	呢喃貓		1
+kkky_kkky	KKKY	呢喃貓		1
+hyc.tw	hyc	三隻小貓	Coding 開發貓貓	4
+ggininder0511	GGininder	呢喃貓		1
+arensusu	ArenSusu	呢喃貓		1
+chen6326	CHEN	呢喃貓		1
+jie9416	歐噴🔆	呢喃貓		1
+_yho	Yho	呢喃貓		1
+starryu4327	米奇爺爺	呢喃貓		1
+anan1126	安安	呢喃貓		1
+hyacinthqq	hyacinthQQ ｜	三隻小貓		3
+taotieh.eth	TaoTieh	呢喃貓		1
+0xmarcus_h	Marcus	呢喃貓		1
+allenloo	Allen 超級五吉	呢喃貓		1
+coffeetsai	coffeeTsai	三隻小貓		3
+kenw911		呢喃貓		1
+30435	30435	呢喃貓		1
+laicc	laicc 阿岐	呢喃貓		1
+crypto.wen	wen	三隻小貓		3
+alanj5194	AlanJ	呢喃貓		1
+blackkk531	blackkk531	呢喃貓		1
+ipo_ipo	一波	三隻小貓		3
+xiao_lin.	小林	呢喃貓		1
+h.sun	HS	呢喃貓		1
+weiiwill	weiiwill	呢喃貓		1
+shawnkao	Shawn KAO	呢喃貓		1
+play3601	凱哥	三隻小貓		3
+35p2018	35P	呢喃貓		1
+demon_cat_0306	Eunha	呢喃貓		1
+twaxuan	Randy	呢喃貓		1
+chenkuanting	Professor	呢喃貓		1
+murmurcatsw	Murmurcats | 韭菜W	呢喃貓		1
+newnew5473	newnew	呢喃貓		1
+hedging_util	避難器具	呢喃貓		1
+.0xandy	0xAndy	雙貓流		2
+jojofish.eth	JOJOFISH	呢喃貓		1
+m33qq	MichaelSEO	呢喃貓		1
+slipknot9527	slipknot	呢喃貓		1
+richardchien6	richardchien6	呢喃貓		1
+rudolph9527	DC86	呢喃貓		1
+gongyuancaiji	H菜g	呢喃貓		1
+barry10061	Barry	呢喃貓		1
+sjlin	SJLin	雙貓流		2
+abab8964	Richart	呢喃貓		1
+0xll	LL	呢喃貓	"團隊貓貓
+Coding 開發貓貓"	3
+0xdragon	0xdragon	呢喃貓		1
+rrr1234	RRR1234	三隻小貓		3
+antiarko	antiarko｜murmurcat	呢喃貓		1
+tobeasgodas6a	¿BIM	三隻小貓		3
+jeffrey200140	花生冰淇淋｜WTC🐯	三隻小貓	Coding 開發貓貓	4
+kkkkofffuu	高拔dc	呢喃貓		1
+rickson96	Rickson	呢喃貓		1
+aneow	Aneow	呢喃貓		1
+kkw0691	KK	呢喃貓		1
+chenclw	阿良	呢喃貓		1
+bobbyli7005	Bobby Li	呢喃貓		1
+marshall123	Marshall	呢喃貓		1
+mkw888	Mkw	呢喃貓		1
+jacobdisco	JacobDisco	呢喃貓		1
+yaer0889	yaer	三隻小貓		3
+mrj88	Mr.J	呢喃貓		1
+jenmy	mj	三隻小貓		3
+sheng0978	Sheng	呢喃貓		1
+chasel0527	Chasel	呢喃貓		1
+dirhsu	dirhsu	三隻小貓		3
+derekchuang	DerekChuang	呢喃貓		1
+lukachain	路卡琛	呢喃貓		1
+terry747	獅子丸 ｜💵 五吉 🏠	三隻小貓	團隊貓貓	4
+cookieseven	CookieSeven	三隻小貓		3
+chamarix	CC | Chamarix	呢喃貓		1
+jackytsai	Jacky Tsai	呢喃貓		1
+rudy6180	Ru	呢喃貓		1
+weihung5488	Weihung5488	雙貓流		2
+ooocyooo	CYCY	呢喃貓		1
+archer6666	Archer發發	呢喃貓		1
+vicente_9527	vicente_9527	呢喃貓		1
+tonymurmurcat	Tony	呢喃貓	團隊貓貓	2
+luke_ht	Luke.ht	三隻小貓		3
+shayne0713	shayneli.bnb	呢喃貓		1
+wjc852	矮倫	呢喃貓		1
+ky6683	KY	呢喃貓		1
+borong5188	borong	呢喃貓		1
+toot3190	TOOT	呢喃貓		1
+yohohocc	唷齁齁	呢喃貓		1
+phenyljelly	果凍	呢喃貓		1
+sihalon	sihalon	呢喃貓		1
+kkyou.	Pawa	呢喃貓		1
+cryptomonkeycho	Ming	呢喃貓		1
+cobra.fu	Cobra	呢喃貓		1
+nelson8958		呢喃貓		1
+joycewuji	Joyce五吉	雙貓流		2
+jeff_tianxinfang	JeffSkate	三隻小貓		3
+aaaaaamurmurcat	五吉 AAAAAA	呢喃貓	團隊貓貓	2
+0xkjj	0xKJJ	呢喃貓		1
+reitschule	reitschule	三隻小貓		3
+ffcccharlymurmurcat	五吉Charly｜Murmurcat	呢喃貓		1
+simpl3thing	Simplething	呢喃貓		1
+andy781209	嗜血狼魂	三隻小貓		3
+amber.00	Amber	呢喃貓		1
+.rason	Rason	三隻小貓		3
+pimosocreate	Pimo | So Create	呢喃貓		1
+huadon	花東原始人	三隻小貓		3
+.ptzu	ptzu	三隻小貓		3
+cryptowilson_yt	CryptoWilson｜WTC🐯（台灣幣圈第一深情）	雙貓流		2
+jamieh2971	Jamie h	呢喃貓		1
+kenc305	KenC	雙貓流		2
+bcs168	bcs168	雙貓流		2
+jira_vision	Jira.vision	呢喃貓		1
+erica0911lalphashark		呢喃貓		1
+kabedo	Kabedo	呢喃貓		1
+0xlonnie	Lonnie	三隻小貓		3
+icegine	icegine	呢喃貓		1
+ct.eth	CT	呢喃貓		1
+godsky168	GDY｜招財進寶｜❤	呢喃貓		1
+fc89	fc89	呢喃貓		1
+alvin_lu	Alvin | 地方賢達 |	三隻小貓		3
+nicobgg		呢喃貓		1
+linkm1001	Linkm1001	呢喃貓		1
+pighead621	來玩我的鳥鳥|春幾枝懶覺	呢喃貓		1
+lialin916	Lia	雙貓流		2
+wei.0212	Wei	雙貓流		2
+jess5348	Je	雙貓流		2
+rafe.tsai	傘蜥蜴	呢喃貓		1
+billymurmurcats	Billy｜Murmurcats	呢喃貓		1
+asakye	Hank/Asakye	三隻小貓		3
+arthur.tw		雙貓流		2
+ccpun531	彭小龜 Mark	呢喃貓		1
+kacaw	Kacaw	呢喃貓		1
+mr.mr0587	Mr.MR	呢喃貓		1
+yizo1406	宥子	呢喃貓		1
+0xyk	0xYK	呢喃貓		1
+blues_07	Blues	呢喃貓		1
+wjtyl	WJT｜DJZ	三隻小貓		3
+anan1901	An An	呢喃貓		1
+cryptormurmurcat	Cryptor | 呢喃	呢喃貓		1
+cookiee8156	!Cookiee	呢喃貓		1
+xingrennai.	薇薇安	呢喃貓		1
+kyle.c	Kyle.C	呢喃貓		1
+zen7863		呢喃貓		1
+robbie0921	robbie0921	三隻小貓		3
+jiangmango	Jiangmango	呢喃貓		1
+little_lighty	AC(-1,-1)	三隻小貓		3
+allthatis	All That Is	九mint怪貓	九mint怪貓	保證名額
+jack_88748	(Jack)	呢喃貓		1
+9huang	9Huang	呢喃貓		1
+lori7733	lori	雙貓流		2
+unoman1990	unoman	呢喃貓		1
+mikeshake0225	奶昔	呢喃貓		1
+_0xeden	_0xEden	三隻小貓		3
+mh_murmurcats	MH	三隻小貓		3
+ex2bhb	wj	呢喃貓		1
+hootandhodl	貓頭獸不鳥	呢喃貓		1
+ivy17987	ivy chen	呢喃貓		1
+alberttsai2215	F	呢喃貓		1
+godspeed9203	Speedy五吉	呢喃貓		1
+honda8999	Honda	三隻小貓		3
+alextsai_dc	ALEX TSAI	呢喃貓		1
+jian5670	jian5670	呢喃貓		1
+66alphakids	66	呢喃貓		1
+jimmyhuii	吉米流	雙貓流		2
+ernestopronius	ernestopronius	三隻小貓		3
+wake5020	Wake	呢喃貓		1
+pohan_0723	Pohanchen	呢喃貓		1
+vic81413	Vic	三隻小貓		3
+guanguan2186	關關GuanGuan	呢喃貓		1
+sam70208		呢喃貓		1
+strawberryquack	Strawberryduck草莓鴨	呢喃貓	Coding 開發貓貓	2
+wakka0880	wakka	呢喃貓		1
+kikyobaby	Kyo	呢喃貓		1
+eric_yuyushih	Eric	呢喃貓		1
+gdnsmbe	Gorden	呢喃貓		1
+yuyou0324	乂煞氣a魚魚you乂	呢喃貓		1
+alphacall6666	α	呢喃貓		1
+akai4179	凱凱	呢喃貓		1
+harry080754	Harry	呢喃貓		1
+andyuan997	阿謙 📉💩👋	呢喃貓		1
+omarliu401	omar666	呢喃貓		1`;
+
+    const headers = ["username", "global_name", "role", "額外身份", "票數"];
+    const icons = {
+      play: '<polygon points="6 3 20 12 6 21 6 3"></polygon>',
+      copy: '<rect width="14" height="14" x="8" y="8" rx="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>',
+      flask: '<path d="M9 3h6"></path><path d="M10 3v6l-5 8a3 3 0 0 0 2.5 4.6h9a3 3 0 0 0 2.5-4.6l-5-8V3"></path><path d="M7 16h10"></path>',
+      skip: '<polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" x2="19" y1="5" y2="19"></line>',
+      trash: '<path d="M3 6h18"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><path d="M19 6l-1 14c-.1 1-1 2-2 2H8c-1 0-2-1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
+      moon: '<path d="M12 3a6 6 0 0 0 9 7 9 9 0 1 1-9-7Z"></path>',
+      sun: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>',
+      users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
+      ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path>',
+      shield: '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3Z"></path><path d="m9 12 2 2 4-4"></path>',
+      trophy: '<path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v6a5 5 0 0 1-10 0Z"></path><path d="M5 9a2 2 0 0 1-2-2V5h4"></path><path d="M19 9a2 2 0 0 0 2-2V5h-4"></path>',
+      target: '<circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle>',
+      list: '<line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line>'
+    };
+    const statIcons = {
+      "總人數": "users",
+      "加權票數合計": "ticket",
+      "保證名額": "shield",
+      "本次中獎數": "trophy",
+      "本次輸入名額": "target"
+    };
+    const state = {
+      rows: parseTsv(rawData),
+      winners: []
+    };
+
+    const drawCountInput = document.getElementById("drawCount");
+    const drawButton = document.getElementById("drawButton");
+    const copyButton = document.getElementById("copyButton");
+    const testButton = document.getElementById("testButton");
+    const resetButton = document.getElementById("resetButton");
+    const themeToggle = document.getElementById("themeToggle");
+    const summary = document.getElementById("summary");
+    const notice = document.getElementById("notice");
+    const testReport = document.getElementById("testReport");
+    const resultWrap = document.getElementById("resultWrap");
+    const stageLabel = document.getElementById("stageLabel");
+    const stageCount = document.getElementById("stageCount");
+    const tickerBox = document.getElementById("tickerBox");
+    const tickerName = document.getElementById("tickerName");
+    const tickerMeta = document.getElementById("tickerMeta");
+    const progressBar = document.getElementById("progressBar");
+    const rosterWrap = document.getElementById("rosterWrap");
+    const rosterCount = document.getElementById("rosterCount");
+    const rosterIcon = document.getElementById("rosterIcon");
+    let activeRunId = 0;
+    let skipAnimation = false;
+
+    drawCountInput.max = String(state.rows.length);
+    drawButton.addEventListener("click", draw);
+    copyButton.addEventListener("click", copyCsv);
+    testButton.addEventListener("click", runLogicTest);
+    resetButton.addEventListener("click", resetResults);
+    themeToggle.addEventListener("click", toggleTheme);
+
+    initTheme();
+    initIcons();
+    renderSummary();
+    renderRoster();
+
+    function parseTsv(text) {
+      const records = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            field += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+          continue;
+        }
+
+        if (char === "\t" && !inQuotes) {
+          row.push(field);
+          field = "";
+          continue;
+        }
+
+        if ((char === "\n" || char === "\r") && !inQuotes) {
+          if (char === "\r" && next === "\n") i += 1;
+          row.push(field);
+          records.push(row);
+          row = [];
+          field = "";
+          continue;
+        }
+
+        field += char;
+      }
+
+      row.push(field);
+      records.push(row);
+
+      const [headerRow, ...dataRows] = records;
+      return dataRows
+        .filter((cells) => cells.some((cell) => cell.trim() !== ""))
+        .map((cells) => {
+          const item = {};
+          headerRow.forEach((header, index) => {
+            item[header] = cells[index] || "";
+          });
+          item.weight = Number.parseInt(item["票數"], 10);
+          item.guaranteed = item["票數"] === "保證名額";
+          return item;
+        });
+    }
+
+    function randomUnit() {
+      const array = new Uint32Array(1);
+      crypto.getRandomValues(array);
+      return array[0] / 4294967296;
+    }
+
+    function weightedPick(pool, rng = randomUnit) {
+      const total = pool.reduce((sum, item) => sum + item.weight, 0);
+      let point = rng() * total;
+
+      for (let i = 0; i < pool.length; i += 1) {
+        point -= pool[i].weight;
+        if (point < 0) return i;
+      }
+
+      return pool.length - 1;
+    }
+
+    function drawWinners(rows, count, rng = randomUnit) {
+      const uniqueRows = dedupeByUsername(rows);
+      const targetCount = Math.max(1, Math.min(count, uniqueRows.length));
+      const guaranteed = uniqueRows.filter((item) => item.guaranteed);
+      const pool = uniqueRows.filter((item) => !item.guaranteed && item.weight > 0);
+      const winners = [...guaranteed];
+      const remainingSlots = Math.max(0, targetCount - winners.length);
+
+      for (let i = 0; i < remainingSlots && pool.length > 0; i += 1) {
+        const selectedIndex = weightedPick(pool, rng);
+        winners.push(pool[selectedIndex]);
+        pool.splice(selectedIndex, 1);
+      }
+
+      return winners;
+    }
+
+    async function draw() {
+      const runId = activeRunId + 1;
+      activeRunId = runId;
+      skipAnimation = false;
+      const requested = Number.parseInt(drawCountInput.value, 10);
+      const targetCount = Number.isFinite(requested) && requested > 0 ? requested : 1;
+      const uniqueRows = dedupeByUsername(state.rows);
+      const guaranteed = uniqueRows.filter((item) => item.guaranteed);
+      const winners = drawWinners(state.rows, targetCount);
+
+      state.winners = [];
+      setControlsBusy(true);
+      renderSummary(targetCount);
+      renderNotice(targetCount, winners.length, guaranteed.length);
+      renderResults([]);
+      updateStage("抽籤中", 0, winners.length, "正在洗牌", "準備抽出名單");
+
+      try {
+        await runTicker(winners, runId);
+        await revealWinners(winners, targetCount, runId);
+      } finally {
+        if (activeRunId === runId) {
+          state.winners = winners;
+          renderResults(winners);
+          renderSummary(targetCount);
+          updateStage("抽籤完成", winners.length, winners.length, "抽籤完成", `已抽出 ${winners.length} 名`);
+          tickerBox.classList.remove("is-running");
+          setControlsBusy(false);
+        }
+      }
+    }
+
+    function setControlsBusy(isBusy) {
+      drawButton.disabled = isBusy;
+      copyButton.disabled = isBusy;
+      testButton.disabled = isBusy;
+      resetButton.disabled = isBusy;
+      setButton(drawButton, isBusy ? "target" : "play", isBusy ? "抽籤中..." : "開始抽籤");
+    }
+
+    async function runTicker(winners, runId) {
+      const candidates = dedupeByUsername(state.rows).filter((row) => !row.guaranteed);
+      const duration = winners.length > 80 ? 650 : winners.length > 20 ? 850 : 1100;
+      const startedAt = performance.now();
+      tickerBox.classList.add("is-running");
+
+      while (performance.now() - startedAt < duration) {
+        if (skipAnimation || activeRunId !== runId) break;
+        const candidate = candidates[Math.floor(randomUnit() * candidates.length)] || winners[0];
+        showTickerPerson(candidate, "候選池快速輪播中");
+        await sleep(55);
+      }
+
+      tickerBox.classList.remove("is-running");
+      if (winners[0]) showTickerPerson(winners[0], winners[0].guaranteed ? "保證名額先列入" : "準備揭曉");
+    }
+
+    async function revealWinners(winners, targetCount, runId) {
+      const policy = getRevealPolicy(winners.length);
+      const visible = [];
+      let index = 0;
+
+      while (index < winners.length) {
+        if (activeRunId !== runId) return;
+
+        const remaining = winners.length - index;
+        const chunkSize = skipAnimation ? remaining : getChunkSize(index, winners.length, policy);
+        visible.push(...winners.slice(index, index + chunkSize));
+        index += chunkSize;
+
+        state.winners = [...visible];
+        renderResults(state.winners);
+        renderSummary(targetCount);
+        const latest = visible[visible.length - 1];
+        showTickerPerson(latest, latest.guaranteed ? "保證名額" : `第 ${visible.length} 名揭曉`);
+        updateStage("揭曉中", visible.length, winners.length, latest.global_name || latest.username, `已抽出 ${visible.length} / ${winners.length}`);
+        resultWrap.scrollTop = resultWrap.scrollHeight;
+
+        if (skipAnimation || index >= winners.length) continue;
+        await sleep(policy.delay);
+      }
+    }
+
+    function getRevealPolicy(total) {
+      if (total <= 20) return { delay: 180, first: total, last: 0, batch: 1 };
+      if (total <= 80) return { delay: 90, first: 8, last: 5, batch: 8 };
+      return { delay: 55, first: 5, last: 5, batch: 18 };
+    }
+
+    function getChunkSize(index, total, policy) {
+      if (index < policy.first) return 1;
+      if (total - index <= policy.last) return 1;
+      return Math.min(policy.batch, total - index - policy.last);
+    }
+
+    function showTickerPerson(row, meta) {
+      tickerName.textContent = row ? (row.global_name || row.username) : "等待開始";
+      tickerMeta.textContent = row ? `${row.username} · ${row.role || "未標示身份"} · ${row.guaranteed ? "保證名額" : `權重 ${row.weight}`}` : meta;
+      if (row && meta) stageLabel.textContent = meta;
+    }
+
+    function updateStage(label, current, total, name, meta) {
+      stageLabel.textContent = label;
+      stageCount.textContent = `${current} / ${total}`;
+      tickerName.textContent = name;
+      tickerMeta.textContent = meta;
+      progressBar.style.width = total > 0 ? `${Math.round((current / total) * 100)}%` : "0%";
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function dedupeByUsername(rows) {
+      const seen = new Set();
+      return rows.filter((row) => {
+        if (seen.has(row.username)) return false;
+        seen.add(row.username);
+        return true;
+      });
+    }
+
+    function renderSummary(requestedCount = null) {
+      const guaranteedCount = state.rows.filter((row) => row.guaranteed).length;
+      const weightedRows = state.rows.filter((row) => !row.guaranteed && row.weight > 0);
+      const totalTickets = weightedRows.reduce((sum, row) => sum + row.weight, 0);
+      const stats = [
+        ["總人數", state.rows.length],
+        ["加權票數合計", totalTickets],
+        ["保證名額", guaranteedCount],
+        ["本次中獎數", state.winners.length]
+      ];
+
+      if (requestedCount !== null) {
+        stats.push(["本次輸入名額", requestedCount]);
+      }
+
+      summary.innerHTML = stats
+        .map(([label, value]) => `<div class="stat">
+          <span class="stat-label">${iconSvg(statIcons[label] || "target")}${escapeHtml(label)}</span>
+          <strong>${escapeHtml(String(value))}</strong>
+        </div>`)
+        .join("");
+    }
+
+    function renderNotice(targetCount, actualCount, guaranteedCount) {
+      if (guaranteedCount > targetCount) {
+        notice.textContent = `保證名額共有 ${guaranteedCount} 位，已全部列入；因此實際中獎數 ${actualCount} 位會超過你輸入的 ${targetCount} 位。`;
+        notice.classList.add("show");
+        return;
+      }
+
+      notice.textContent = "";
+      notice.classList.remove("show");
+    }
+
+    function renderResults(rows) {
+      if (rows.length === 0) {
+        resultWrap.innerHTML = '<div class="empty">尚未抽籤</div>';
+        return;
+      }
+
+      const body = rows.map((row, index) => {
+        const ticket = row.guaranteed
+          ? '<span class="badge">保證名額</span>'
+          : escapeHtml(String(row.weight));
+        const rowClass = row.guaranteed ? "result-row guaranteed-row" : "result-row";
+
+        return `<tr class="${rowClass}">
+          <td>${index + 1}</td>
+          <td>${escapeHtml(row.username)}</td>
+          <td>${escapeHtml(row.global_name || "")}</td>
+          <td>${renderIdentityPills([row.role])}</td>
+          <td>${renderIdentityPills(splitIdentities(row["額外身份"]))}</td>
+          <td>${ticket}</td>
+        </tr>`;
+      }).join("");
+
+      resultWrap.innerHTML = `<table>
+        <thead>
+          <tr>
+            <th>#</th>
+            ${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>`;
+    }
+
+    function renderRoster() {
+      const rows = dedupeByUsername(state.rows);
+      rosterCount.textContent = `${rows.length} 人`;
+
+      const body = rows.map((row, index) => {
+        const identityItems = [row.role, ...splitIdentities(row["額外身份"])];
+        const weight = row.guaranteed
+          ? '<span class="badge">保證</span>'
+          : `<div class="weight-stack">
+              <span>${escapeHtml(String(row.weight))}</span>
+              <span class="weight-bar"><span class="weight-fill" style="width: ${Math.min(row.weight, 4) * 25}%"></span></span>
+            </div>`;
+
+        return `<tr>
+          <td>${index + 1}</td>
+          <td class="roster-name">
+            <strong>${escapeHtml(row.global_name || row.username)}</strong>
+            <span>${escapeHtml(row.username)}</span>
+          </td>
+          <td class="weight-cell">${weight}</td>
+          <td class="identity-cell">${renderIdentityPills(identityItems)}</td>
+        </tr>`;
+      }).join("");
+
+      rosterWrap.innerHTML = `<table class="roster-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>名單</th>
+            <th>權重</th>
+            <th>身份</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>`;
+    }
+
+    function splitIdentities(value) {
+      return String(value || "")
+        .split(/\n+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function renderIdentityPills(items) {
+      const cleanItems = items.map((item) => String(item || "").trim()).filter(Boolean);
+      if (cleanItems.length === 0) return "";
+
+      return `<div class="pill-list">${cleanItems
+        .map((item) => `<span class="identity-pill ${identityClass(item)}">${escapeHtml(item)}</span>`)
+        .join("")}</div>`;
+    }
+
+    function identityClass(identity) {
+      const classByIdentity = {
+        "呢喃貓": "pill-murmur",
+        "三隻小貓": "pill-three",
+        "雙貓流": "pill-double",
+        "九mint怪貓": "pill-nine",
+        "Coding 開發貓貓": "pill-coding",
+        "團隊貓貓": "pill-team"
+      };
+
+      return classByIdentity[identity] || "pill-other";
+    }
+
+    function initIcons() {
+      setButton(drawButton, "play", "開始抽籤");
+      setButton(copyButton, "copy", "複製結果 CSV");
+      setButton(testButton, "flask", "測試抽籤邏輯");
+      setButton(resetButton, "trash", "清空結果");
+      rosterIcon.innerHTML = iconSvg("list");
+    }
+
+    function setButton(button, iconName, label) {
+      button.innerHTML = `${iconSvg(iconName)}<span>${escapeHtml(label)}</span>`;
+    }
+
+    function iconSvg(name) {
+      const body = icons[name] || icons.target;
+      return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem("lottery-theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setTheme(savedTheme || (prefersDark ? "dark" : "light"));
+    }
+
+    function toggleTheme() {
+      const nextTheme = document.body.classList.contains("dark") ? "light" : "dark";
+      setTheme(nextTheme);
+      localStorage.setItem("lottery-theme", nextTheme);
+    }
+
+    function setTheme(theme) {
+      const isDark = theme === "dark";
+      document.body.classList.toggle("dark", isDark);
+      setButton(themeToggle, isDark ? "sun" : "moon", isDark ? "淺色模式" : "深色模式");
+      themeToggle.setAttribute("aria-pressed", String(isDark));
+    }
+
+    function runLogicTest() {
+      const iterations = 20000;
+      const drawCount = 10;
+      const uniqueRows = dedupeByUsername(state.rows);
+      const guaranteedUsernames = uniqueRows.filter((row) => row.guaranteed).map((row) => row.username);
+      const nonGuaranteed = uniqueRows.filter((row) => !row.guaranteed && row.weight > 0);
+      const winCounts = new Map(nonGuaranteed.map((row) => [row.username, 0]));
+      const rng = seededRng(20260618);
+      let duplicateErrors = 0;
+      let countErrors = 0;
+      let guaranteeErrors = 0;
+
+      for (let i = 0; i < iterations; i += 1) {
+        const winners = drawWinners(uniqueRows, drawCount, rng);
+        const usernames = winners.map((row) => row.username);
+        const uniqueWinnerCount = new Set(usernames).size;
+
+        if (winners.length !== drawCount) countErrors += 1;
+        if (uniqueWinnerCount !== winners.length) duplicateErrors += 1;
+        if (!guaranteedUsernames.every((username) => usernames.includes(username))) guaranteeErrors += 1;
+
+        winners.forEach((winner) => {
+          if (!winner.guaranteed) {
+            winCounts.set(winner.username, (winCounts.get(winner.username) || 0) + 1);
+          }
+        });
+      }
+
+      const rates = summarizeWeightRates(nonGuaranteed, winCounts, iterations);
+      const trendOk = rates[4].rate > rates[3].rate && rates[3].rate > rates[2].rate && rates[2].rate > rates[1].rate;
+      const passed = duplicateErrors === 0 && countErrors === 0 && guaranteeErrors === 0 && trendOk;
+
+      testReport.classList.add("show");
+      testReport.innerHTML = `<h2>抽籤邏輯測試報告</h2>
+        <p><span class="${passed ? "test-pass" : "test-fail"}">整體結果：${passed ? "通過" : "未通過"}</span></p>
+        <div class="test-grid">
+          <div class="test-metric">模擬次數<strong>${iterations.toLocaleString("zh-TW")}</strong></div>
+          <div class="test-metric">每次抽出<strong>${drawCount}</strong></div>
+          <div class="test-metric">保證名額出現率<strong>${guaranteeErrors === 0 ? "100%" : formatPct((iterations - guaranteeErrors) / iterations)}</strong></div>
+          <div class="test-metric">重複 username 錯誤<strong>${duplicateErrors}</strong></div>
+          <div class="test-metric">結果筆數錯誤<strong>${countErrors}</strong></div>
+          <div class="test-metric">權重趨勢<strong>${trendOk ? "4 > 3 > 2 > 1" : "不符合預期"}</strong></div>
+        </div>
+        <ul>
+          <li>權重 1 平均中獎率：${formatPct(rates[1].rate)}，人數 ${rates[1].people}</li>
+          <li>權重 2 平均中獎率：${formatPct(rates[2].rate)}，人數 ${rates[2].people}</li>
+          <li>權重 3 平均中獎率：${formatPct(rates[3].rate)}，人數 ${rates[3].people}</li>
+          <li>權重 4 平均中獎率：${formatPct(rates[4].rate)}，人數 ${rates[4].people}</li>
+        </ul>
+        <p>這個測試使用固定亂數種子，方便重複驗證；正式抽籤仍使用瀏覽器的 crypto 隨機數。</p>`;
+    }
+
+    function seededRng(seed) {
+      let value = seed >>> 0;
+      return function nextRandom() {
+        value += 0x6D2B79F5;
+        let mixed = value;
+        mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+        mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+        return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function summarizeWeightRates(rows, winCounts, iterations) {
+      const summaryByWeight = {
+        1: { wins: 0, people: 0, rate: 0 },
+        2: { wins: 0, people: 0, rate: 0 },
+        3: { wins: 0, people: 0, rate: 0 },
+        4: { wins: 0, people: 0, rate: 0 }
+      };
+
+      rows.forEach((row) => {
+        if (!summaryByWeight[row.weight]) return;
+        summaryByWeight[row.weight].people += 1;
+        summaryByWeight[row.weight].wins += winCounts.get(row.username) || 0;
+      });
+
+      Object.values(summaryByWeight).forEach((group) => {
+        group.rate = group.people > 0 ? group.wins / (iterations * group.people) : 0;
+      });
+
+      return summaryByWeight;
+    }
+
+    function formatPct(value) {
+      return `${(value * 100).toFixed(2)}%`;
+    }
+
+    async function copyCsv() {
+      if (state.winners.length === 0) {
+        alert("目前沒有結果可以複製。");
+        return;
+      }
+
+      const lines = [
+        ["序號", ...headers].map(csvEscape).join(","),
+        ...state.winners.map((row, index) => [
+          index + 1,
+          row.username,
+          row.global_name || "",
+          row.role || "",
+          row["額外身份"] || "",
+          row["票數"]
+        ].map(csvEscape).join(","))
+      ];
+
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setButton(copyButton, "copy", "已複製");
+      setTimeout(() => {
+        setButton(copyButton, "copy", "複製結果 CSV");
+      }, 1200);
+    }
+
+    function resetResults() {
+      activeRunId += 1;
+      skipAnimation = true;
+      state.winners = [];
+      notice.textContent = "";
+      notice.classList.remove("show");
+      testReport.classList.remove("show");
+      testReport.innerHTML = "";
+      tickerBox.classList.remove("is-running");
+      updateStage("準備抽籤", 0, 0, "等待開始", "輸入名額後按開始抽籤");
+      setControlsBusy(false);
+      renderSummary();
+      renderResults([]);
+    }
+
+    function csvEscape(value) {
+      const text = String(value ?? "");
+      if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+      return text;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
