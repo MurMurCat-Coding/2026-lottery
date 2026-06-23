@@ -97,6 +97,47 @@
       line-height: 1.6;
     }
 
+    .rules-panel {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 14px 16px;
+      box-shadow: 0 10px 24px var(--shadow);
+    }
+
+    .rules-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .rules-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .rule-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--stat-bg);
+      padding: 5px 10px;
+      color: var(--button-text);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
     .panel {
       margin-top: 20px;
       background: var(--panel);
@@ -667,6 +708,19 @@
       <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false">深色模式</button>
     </div>
 
+    <section class="rules-panel" aria-label="抽獎規則">
+      <h2 class="rules-title"><span class="icon" aria-hidden="true" id="rulesIcon"></span>抽獎規則</h2>
+      <ul class="rules-list">
+        <li class="rule-chip">呢喃貓：1 票</li>
+        <li class="rule-chip">雙貓流：2 票</li>
+        <li class="rule-chip">三隻小貓：4 票</li>
+        <li class="rule-chip">九貓：保證入選</li>
+        <li class="rule-chip">Coding 開發貓貓：+1 票</li>
+        <li class="rule-chip">團隊貓貓：+1 票</li>
+        <li class="rule-chip">單一帳號權重上限：5 票</li>
+      </ul>
+    </section>
+
     <div class="layout">
       <section class="panel" aria-label="抽籤控制">
         <div class="controls">
@@ -946,6 +1000,7 @@ guavaxy	芭樂	三隻小貓		4`;
     const rosterWrap = document.getElementById("rosterWrap");
     const rosterCount = document.getElementById("rosterCount");
     const rosterIcon = document.getElementById("rosterIcon");
+    const rulesIcon = document.getElementById("rulesIcon");
     let activeRunId = 0;
     let skipAnimation = false;
 
@@ -1313,6 +1368,7 @@ guavaxy	芭樂	三隻小貓		4`;
       setButton(testButton, "flask", "測試抽籤邏輯");
       setButton(resetButton, "trash", "清空結果");
       rosterIcon.innerHTML = iconSvg("list");
+      rulesIcon.innerHTML = iconSvg("ticket");
     }
 
     function setButton(button, iconName, label) {
